@@ -6,17 +6,19 @@ param (
     [string]$User,
     [switch]$CreateRestorePoint,
     [switch]$RunAppsListGenerator, [switch]$RunAppConfigurator,
-    [switch]$RunDefaults, [switch]$RunWin11Defaults,
+    [switch]$RunDefaults,
+    [switch]$RunDefaultsLite,
     [switch]$RunSavedSettings,
-    [switch]$RemoveApps, 
+    [string]$Apps,
+    [switch]$RemoveApps,
     [switch]$RemoveAppsCustom,
     [switch]$RemoveGamingApps,
     [switch]$RemoveCommApps,
-    [switch]$RemoveDevApps,
     [switch]$RemoveHPApps,
     [switch]$RemoveW11Outlook,
     [switch]$ForceRemoveEdge,
     [switch]$DisableDVR,
+    [switch]$DisableGameBarIntegration,
     [switch]$DisableTelemetry,
     [switch]$DisableFastStartup,
     [switch]$DisableModernStandbyNetworking,
@@ -34,12 +36,16 @@ param (
     [switch]$DisableTransparency,
     [switch]$DisableAnimations,
     [switch]$TaskbarAlignLeft,
+    [switch]$CombineTaskbarAlways, [switch]$CombineTaskbarWhenFull, [switch]$CombineTaskbarNever,
+    [switch]$CombineMMTaskbarAlways, [switch]$CombineMMTaskbarWhenFull, [switch]$CombineMMTaskbarNever,
+    [switch]$MMTaskbarModeAll, [switch]$MMTaskbarModeMainActive, [switch]$MMTaskbarModeActive,
     [switch]$HideSearchTb, [switch]$ShowSearchIconTb, [switch]$ShowSearchLabelTb, [switch]$ShowSearchBoxTb,
     [switch]$HideTaskview,
     [switch]$DisableStartRecommended,
     [switch]$DisableStartPhoneLink,
     [switch]$DisableCopilot,
     [switch]$DisableRecall,
+    [switch]$DisableClickToDo,
     [switch]$DisablePaintAI,
     [switch]$DisableNotepadAI,
     [switch]$DisableEdgeAI,
@@ -60,6 +66,7 @@ param (
     [switch]$ExplorerToThisPC,
     [switch]$ExplorerToDownloads,
     [switch]$ExplorerToOneDrive,
+    [switch]$NoRestartExplorer,
     [switch]$DisableOnedrive, [switch]$HideOnedrive,
     [switch]$Disable3dObjects, [switch]$Hide3dObjects,
     [switch]$DisableMusic, [switch]$HideMusic,
@@ -84,14 +91,24 @@ Write-Output "------------------------------------------------------------------
 
 Write-Output "> Downloading Win11Debloat..."
 
-# Download latest version of Win11Debloat from github as zip archive
-Invoke-RestMethod https://api.github.com/repos/Raphire/Win11Debloat/zipball/2025.09.08 -OutFile "$env:TEMP/win11debloat.zip"
+# Download latest version of Win11Debloat from GitHub as zip archive
+try {
+    $LatestReleaseUri = (Invoke-RestMethod https://api.github.com/repos/Raphire/Win11Debloat/releases/latest).zipball_url
+    Invoke-RestMethod $LatestReleaseUri -OutFile "$env:TEMP/win11debloat.zip"
+}
+catch {
+    Write-Host "Error: Unable to fetch latest release from GitHub. Please check your internet connection and try again." -ForegroundColor Red
+    Write-Output ""
+    Write-Output "Press enter to exit..."
+    Read-Host | Out-Null
+    Exit
+}
 
-# Remove old script folder if it exists, except for CustomAppsList and SavedSettings files
+# Remove old script folder if it exists, except for CustomAppsList and LastUsedSettings.json files
 if (Test-Path "$env:TEMP/Win11Debloat") {
     Write-Output ""
     Write-Output "> Cleaning up old Win11Debloat folder..."
-    Get-ChildItem -Path "$env:TEMP/Win11Debloat" -Exclude CustomAppsList,SavedSettings,Win11Debloat.log | Remove-Item -Recurse -Force
+    Get-ChildItem -Path "$env:TEMP/Win11Debloat" -Exclude CustomAppsList,LastUsedSettings.json,Win11Debloat.log | Remove-Item -Recurse -Force
 }
 
 Write-Output ""
@@ -127,13 +144,13 @@ if ($null -ne $debloatProcess) {
     $debloatProcess.WaitForExit()
 }
 
-# Remove all remaining script files, except for CustomAppsList and SavedSettings files
+# Remove all remaining script files, except for CustomAppsList and LastUsedSettings.json files
 if (Test-Path "$env:TEMP/Win11Debloat") {
     Write-Output ""
     Write-Output "> Cleaning up..."
 
     # Cleanup, remove Win11Debloat directory
-    Get-ChildItem -Path "$env:TEMP/Win11Debloat" -Exclude CustomAppsList,SavedSettings,Win11Debloat.log | Remove-Item -Recurse -Force
+    Get-ChildItem -Path "$env:TEMP/Win11Debloat" -Exclude CustomAppsList,LastUsedSettings.json,Win11Debloat.log | Remove-Item -Recurse -Force
 }
 
 Write-Output ""
